@@ -24,7 +24,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const maxDim = Math.max(rows, cols);
   const SPACING = maxDim <= 3 ? 95 : maxDim <= 4 ? 82 : maxDim <= 5 ? 70 : 60;
   const PADDING = 38;
-  const DOT_RADIUS = maxDim <= 4 ? 6.5 : 5.5;
+  const DOT_RADIUS = maxDim <= 4 ? 7 : 6;
 
   const width = cols * SPACING + PADDING * 2;
   const height = rows * SPACING + PADDING * 2;
@@ -35,66 +35,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     onLineClick(lineId);
   };
 
-  const getPlayerColors = (player?: PlayerType) => {
-    if (player === 'player1') {
-      return {
-        fill: 'url(#p1-box-grad)',
-        stroke: '#06b6d4',
-        text: '#ecfeff',
-        label: 'YOU',
-      };
-    }
-    if (player === 'player2') {
-      return {
-        fill: 'url(#p2-box-grad)',
-        stroke: '#f43f5e',
-        text: '#fff1f2',
-        label: 'AI',
-      };
-    }
-    return null;
-  };
+  // High contrast vibrant colors that render reliably across all browsers without SVG gradient bugs
+  const P1_COLOR = '#00f0ff'; // Bright Electric Cyan for You (Player 1)
+  const P2_COLOR = '#ff2a5f'; // Vivid Neon Rose / Coral for AI (Player 2)
+  const UNCLAIMED_COLOR = '#475569'; // Crisp Slate 600 for visible grid paths
 
   return (
     <div className="relative flex items-center justify-center p-2 sm:p-4 select-none touch-manipulation">
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="w-full max-w-[560px] h-auto drop-shadow-2xl transition-all duration-300"
-        style={{ filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.35))' }}
+        style={{ filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.45))' }}
       >
         <defs>
-          {/* Gradients for Player 1 (Blue / Cyan) */}
-          <linearGradient id="p1-box-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#2563eb" stopOpacity="0.85" />
-          </linearGradient>
-
-          {/* Gradients for Player 2 (Rose / Amber / Red) */}
-          <linearGradient id="p2-box-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#ea580c" stopOpacity="0.85" />
-          </linearGradient>
-
-          {/* Line Gradients */}
-          <linearGradient id="p1-line-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#38bdf8" />
-            <stop offset="100%" stopColor="#2563eb" />
-          </linearGradient>
-
-          <linearGradient id="p2-line-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fb7185" />
-            <stop offset="100%" stopColor="#f97316" />
-          </linearGradient>
-
-          {/* Glow Filters */}
-          <filter id="p1-glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          {/* Subtle Glow Filters for claimed lines */}
+          <filter id="p1-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#00f0ff" floodOpacity="0.8" />
           </filter>
 
-          <filter id="p2-glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          <filter id="p2-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#ff2a5f" floodOpacity="0.8" />
           </filter>
         </defs>
 
@@ -105,20 +65,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           width={cols * SPACING + 36}
           height={rows * SPACING + 36}
           rx={20}
-          fill="#111827"
-          fillOpacity="0.65"
-          stroke="#374151"
-          strokeWidth="1.5"
-          strokeDasharray="4 4"
+          fill="#0f172a"
+          fillOpacity="0.8"
+          stroke="#334155"
+          strokeWidth="2"
+          strokeDasharray="6 6"
         />
 
-        {/* 1. RENDER BOXES */}
+        {/* 1. RENDER BOXES (Background) */}
         {Object.values(boxes).map((box) => {
-          const colors = getPlayerColors(box.owner);
           const x = PADDING + box.col * SPACING + 4;
           const y = PADDING + box.row * SPACING + 4;
           const boxSize = SPACING - 8;
           const isRecentlyClaimed = lastMove?.boxesClaimed?.includes(box.id);
+          const isP1 = box.owner === 'player1';
+          const isP2 = box.owner === 'player2';
 
           if (!box.owner) {
             return (
@@ -128,9 +89,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 y={y}
                 width={boxSize}
                 height={boxSize}
-                rx={10}
-                fill="#1f2937"
-                fillOpacity="0.2"
+                rx={12}
+                fill="#1e293b"
+                fillOpacity="0.3"
                 className="transition-colors duration-200"
               />
             );
@@ -138,35 +99,44 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           return (
             <g key={box.id} className="animate-pop-in origin-center">
+              {/* Box Background Fill */}
               <rect
                 x={x}
                 y={y}
                 width={boxSize}
                 height={boxSize}
-                rx={10}
-                fill={colors?.fill}
-                stroke={colors?.stroke}
-                strokeWidth={isRecentlyClaimed ? 2.5 : 1}
+                rx={12}
+                fill={isP1 ? 'rgba(6, 182, 212, 0.28)' : 'rgba(255, 42, 95, 0.28)'}
+                stroke={isP1 ? P1_COLOR : P2_COLOR}
+                strokeWidth={isRecentlyClaimed ? 2.5 : 1.5}
                 className="transition-all duration-300"
                 style={{
                   filter: isRecentlyClaimed
-                    ? box.owner === 'player1'
-                      ? 'url(#p1-glow)'
-                      : 'url(#p2-glow)'
+                    ? isP1 ? 'url(#p1-glow)' : 'url(#p2-glow)'
                     : undefined,
                 }}
+              />
+
+              {/* Box Center Badge */}
+              <rect
+                x={x + boxSize / 2 - (boxSize > 65 ? 26 : 20)}
+                y={y + boxSize / 2 - 12}
+                width={boxSize > 65 ? 52 : 40}
+                height={24}
+                rx={6}
+                fill={isP1 ? 'rgba(6, 182, 212, 0.9)' : 'rgba(255, 42, 95, 0.9)'}
               />
               <text
                 x={x + boxSize / 2}
                 y={y + boxSize / 2 + 5}
                 textAnchor="middle"
-                fill={colors?.text}
-                fontSize={boxSize > 60 ? '16' : '13'}
-                fontWeight="800"
+                fill="#ffffff"
+                fontSize={boxSize > 65 ? '13' : '11'}
+                fontWeight="900"
                 letterSpacing="1px"
                 style={{ pointerEvents: 'none', userSelect: 'none' }}
               >
-                {colors?.label}
+                {isP1 ? 'YOU' : 'AI'}
               </text>
             </g>
           );
@@ -182,18 +152,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const y2 = y1;
 
             const isOwned = !!line.owner;
+            const isP1 = line.owner === 'player1';
+            const isP2 = line.owner === 'player2';
             const isHovered = hoveredLineId === line.id && !isOwned && !disabled;
             const isLastMove = lastMove?.lineId === line.id;
 
-            const strokeColor = line.owner === 'player1'
-              ? 'url(#p1-line-grad)'
-              : line.owner === 'player2'
-              ? 'url(#p2-line-grad)'
+            // Crisp, high-contrast solid stroke colors
+            const strokeColor = isP1
+              ? P1_COLOR
+              : isP2
+              ? P2_COLOR
               : isHovered
               ? currentPlayer === 'player1'
-                ? '#06b6d4'
-                : '#f43f5e'
-              : '#374151';
+                ? P1_COLOR
+                : P2_COLOR
+              : UNCLAIMED_COLOR;
+
+            const strokeWidth = isOwned ? (isLastMove ? 7 : 6) : isHovered ? 5 : 3;
 
             return (
               <g key={line.id}>
@@ -204,14 +179,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   x2={x2}
                   y2={y2}
                   stroke={strokeColor}
-                  strokeWidth={isOwned ? (isLastMove ? 6 : 5) : isHovered ? 4 : 2}
+                  strokeWidth={strokeWidth}
                   strokeLinecap="round"
-                  strokeDasharray={!isOwned && isHovered ? '6 4' : undefined}
-                  opacity={isOwned ? 1 : isHovered ? 0.9 : 0.45}
+                  strokeDasharray={!isOwned ? (isHovered ? '6 4' : '4 5') : undefined}
+                  opacity={isOwned ? 1 : isHovered ? 1 : 0.65}
                   className="transition-all duration-200"
                   style={{
-                    filter: isLastMove
-                      ? line.owner === 'player1'
+                    filter: isOwned
+                      ? isP1
                         ? 'url(#p1-glow)'
                         : 'url(#p2-glow)'
                       : undefined,
@@ -226,7 +201,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     x2={x2}
                     y2={y2}
                     stroke="transparent"
-                    strokeWidth={26}
+                    strokeWidth={28}
                     strokeLinecap="round"
                     className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
                     onMouseEnter={() => setHoveredLineId(line.id)}
@@ -248,18 +223,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const y2 = PADDING + (line.row + 1) * SPACING;
 
             const isOwned = !!line.owner;
+            const isP1 = line.owner === 'player1';
+            const isP2 = line.owner === 'player2';
             const isHovered = hoveredLineId === line.id && !isOwned && !disabled;
             const isLastMove = lastMove?.lineId === line.id;
 
-            const strokeColor = line.owner === 'player1'
-              ? 'url(#p1-line-grad)'
-              : line.owner === 'player2'
-              ? 'url(#p2-line-grad)'
+            // Crisp, high-contrast solid stroke colors
+            const strokeColor = isP1
+              ? P1_COLOR
+              : isP2
+              ? P2_COLOR
               : isHovered
               ? currentPlayer === 'player1'
-                ? '#06b6d4'
-                : '#f43f5e'
-              : '#374151';
+                ? P1_COLOR
+                : P2_COLOR
+              : UNCLAIMED_COLOR;
+
+            const strokeWidth = isOwned ? (isLastMove ? 7 : 6) : isHovered ? 5 : 3;
 
             return (
               <g key={line.id}>
@@ -270,14 +250,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   x2={x2}
                   y2={y2}
                   stroke={strokeColor}
-                  strokeWidth={isOwned ? (isLastMove ? 6 : 5) : isHovered ? 4 : 2}
+                  strokeWidth={strokeWidth}
                   strokeLinecap="round"
-                  strokeDasharray={!isOwned && isHovered ? '6 4' : undefined}
-                  opacity={isOwned ? 1 : isHovered ? 0.9 : 0.45}
+                  strokeDasharray={!isOwned ? (isHovered ? '6 4' : '4 5') : undefined}
+                  opacity={isOwned ? 1 : isHovered ? 1 : 0.65}
                   className="transition-all duration-200"
                   style={{
-                    filter: isLastMove
-                      ? line.owner === 'player1'
+                    filter: isOwned
+                      ? isP1
                         ? 'url(#p1-glow)'
                         : 'url(#p2-glow)'
                       : undefined,
@@ -292,7 +272,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     x2={x2}
                     y2={y2}
                     stroke="transparent"
-                    strokeWidth={26}
+                    strokeWidth={28}
                     strokeLinecap="round"
                     className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
                     onMouseEnter={() => setHoveredLineId(line.id)}
@@ -304,39 +284,38 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             );
           })}
 
-        {/* 4. RENDER DOTS */}
+        {/* 4. RENDER DOTS (Top layer) */}
         {Array.from({ length: rows + 1 }).map((_, r) =>
           Array.from({ length: cols + 1 }).map((__, c) => {
             const cx = PADDING + c * SPACING;
             const cy = PADDING + r * SPACING;
             return (
               <g key={`dot-${r}-${c}`}>
-                {/* Dot outer subtle ring */}
+                {/* Dot outer shadow ring */}
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={DOT_RADIUS + 2.5}
-                  fill="#030712"
-                  fillOpacity="0.4"
+                  r={DOT_RADIUS + 3}
+                  fill="#020617"
+                  fillOpacity="0.7"
                 />
-                {/* Main dot */}
+                {/* Main crisp white dot */}
                 <circle
                   cx={cx}
                   cy={cy}
                   r={DOT_RADIUS}
-                  fill="#f3f4f6"
+                  fill="#ffffff"
                   className="transition-transform duration-200"
                   style={{
-                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))',
                   }}
                 />
-                {/* Dot center specular pin */}
+                {/* Center pin specular highlight */}
                 <circle
-                  cx={cx - 1}
-                  cy={cy - 1}
+                  cx={cx - 1.5}
+                  cy={cy - 1.5}
                   r={DOT_RADIUS * 0.35}
-                  fill="#ffffff"
-                  fillOpacity="0.9"
+                  fill="#e0f2fe"
                 />
               </g>
             );
