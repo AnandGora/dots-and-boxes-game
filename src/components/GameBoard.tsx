@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { GameBoardState } from '@/lib/gameEngine';
-import { PlayerType } from '@/types/game';
 
 interface GameBoardProps {
   boardState: GameBoardState;
@@ -35,29 +34,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     onLineClick(lineId);
   };
 
-  // High contrast vibrant colors that render reliably across all browsers without SVG gradient bugs
-  const P1_COLOR = '#00f0ff'; // Bright Electric Cyan for You (Player 1)
-  const P2_COLOR = '#ff2a5f'; // Vivid Neon Rose / Coral for AI (Player 2)
-  const UNCLAIMED_COLOR = '#475569'; // Crisp Slate 600 for visible grid paths
+  // Ultra-bright solid colors - no SVG filter tags that cause zero-bounding-box vanishing bugs
+  const P1_COLOR = '#00f0ff'; // Ultra-bright Electric Cyan for You (Player 1)
+  const P2_COLOR = '#ff2a5f'; // Ultra-bright Neon Rose for AI (Player 2)
+  const UNCLAIMED_COLOR = '#475569'; // Slate 600 for visible grid tracks
 
   return (
     <div className="relative flex items-center justify-center p-2 sm:p-4 select-none touch-manipulation">
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="w-full max-w-[560px] h-auto drop-shadow-2xl transition-all duration-300"
-        style={{ filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.45))' }}
+        style={{ filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.5))' }}
       >
-        <defs>
-          {/* Subtle Glow Filters for claimed lines */}
-          <filter id="p1-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#00f0ff" floodOpacity="0.8" />
-          </filter>
-
-          <filter id="p2-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#ff2a5f" floodOpacity="0.8" />
-          </filter>
-        </defs>
-
         {/* Board Background Frame */}
         <rect
           x={PADDING - 18}
@@ -66,7 +54,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           height={rows * SPACING + 36}
           rx={20}
           fill="#0f172a"
-          fillOpacity="0.8"
+          fillOpacity="0.85"
           stroke="#334155"
           strokeWidth="2"
           strokeDasharray="6 6"
@@ -79,7 +67,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           const boxSize = SPACING - 8;
           const isRecentlyClaimed = lastMove?.boxesClaimed?.includes(box.id);
           const isP1 = box.owner === 'player1';
-          const isP2 = box.owner === 'player2';
 
           if (!box.owner) {
             return (
@@ -106,15 +93,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 width={boxSize}
                 height={boxSize}
                 rx={12}
-                fill={isP1 ? 'rgba(6, 182, 212, 0.28)' : 'rgba(255, 42, 95, 0.28)'}
+                fill={isP1 ? 'rgba(0, 240, 255, 0.25)' : 'rgba(255, 42, 95, 0.25)'}
                 stroke={isP1 ? P1_COLOR : P2_COLOR}
-                strokeWidth={isRecentlyClaimed ? 2.5 : 1.5}
+                strokeWidth={isRecentlyClaimed ? 3 : 2}
                 className="transition-all duration-300"
-                style={{
-                  filter: isRecentlyClaimed
-                    ? isP1 ? 'url(#p1-glow)' : 'url(#p2-glow)'
-                    : undefined,
-                }}
               />
 
               {/* Box Center Badge */}
@@ -124,13 +106,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 width={boxSize > 65 ? 52 : 40}
                 height={24}
                 rx={6}
-                fill={isP1 ? 'rgba(6, 182, 212, 0.9)' : 'rgba(255, 42, 95, 0.9)'}
+                fill={isP1 ? P1_COLOR : P2_COLOR}
               />
               <text
                 x={x + boxSize / 2}
                 y={y + boxSize / 2 + 5}
                 textAnchor="middle"
-                fill="#ffffff"
+                fill={isP1 ? '#090d16' : '#ffffff'}
                 fontSize={boxSize > 65 ? '13' : '11'}
                 fontWeight="900"
                 letterSpacing="1px"
@@ -157,7 +139,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const isHovered = hoveredLineId === line.id && !isOwned && !disabled;
             const isLastMove = lastMove?.lineId === line.id;
 
-            // Crisp, high-contrast solid stroke colors
             const strokeColor = isP1
               ? P1_COLOR
               : isP2
@@ -168,7 +149,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 : P2_COLOR
               : UNCLAIMED_COLOR;
 
-            const strokeWidth = isOwned ? (isLastMove ? 7 : 6) : isHovered ? 5 : 3;
+            // When owned: bold solid 7px stroke, NO SVG filter tag
+            const strokeWidth = isOwned ? (isLastMove ? 8 : 7) : isHovered ? 5 : 3;
 
             return (
               <g key={line.id}>
@@ -184,13 +166,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   strokeDasharray={!isOwned ? (isHovered ? '6 4' : '4 5') : undefined}
                   opacity={isOwned ? 1 : isHovered ? 1 : 0.65}
                   className="transition-all duration-200"
-                  style={{
-                    filter: isOwned
-                      ? isP1
-                        ? 'url(#p1-glow)'
-                        : 'url(#p2-glow)'
-                      : undefined,
-                  }}
                 />
 
                 {/* Generous Click/Touch Hitbox */}
@@ -228,7 +203,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const isHovered = hoveredLineId === line.id && !isOwned && !disabled;
             const isLastMove = lastMove?.lineId === line.id;
 
-            // Crisp, high-contrast solid stroke colors
             const strokeColor = isP1
               ? P1_COLOR
               : isP2
@@ -239,7 +213,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 : P2_COLOR
               : UNCLAIMED_COLOR;
 
-            const strokeWidth = isOwned ? (isLastMove ? 7 : 6) : isHovered ? 5 : 3;
+            // When owned: bold solid 7px stroke, NO SVG filter tag
+            const strokeWidth = isOwned ? (isLastMove ? 8 : 7) : isHovered ? 5 : 3;
 
             return (
               <g key={line.id}>
@@ -255,13 +230,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   strokeDasharray={!isOwned ? (isHovered ? '6 4' : '4 5') : undefined}
                   opacity={isOwned ? 1 : isHovered ? 1 : 0.65}
                   className="transition-all duration-200"
-                  style={{
-                    filter: isOwned
-                      ? isP1
-                        ? 'url(#p1-glow)'
-                        : 'url(#p2-glow)'
-                      : undefined,
-                  }}
                 />
 
                 {/* Generous Click/Touch Hitbox */}
